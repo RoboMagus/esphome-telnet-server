@@ -10,6 +10,9 @@ from esphome.const import (
 CONF_CLIENT_COUNT = "client_count"
 CONF_CLIENT_IPS = "client_ips"
 
+DEPENDENCIES = ["network"]
+AUTO_LOAD = ["async_tcp"]
+
 telnet_ns = cg.esphome_ns.namespace("telnet_server")
 TelnetServer = telnet_ns.class_("TelnetServer", cg.Component)
 
@@ -18,12 +21,13 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.declare_id(TelnetServer),
         cv.Optional(CONF_PORT, default=23): cv.port,
         cv.Optional(CONF_CLIENT_COUNT): sensor.sensor_schema(
-            unit_of_measurement=' ',
+            unit_of_measurement=" ",
             accuracy_decimals=0,
         ),
         cv.Optional(CONF_CLIENT_IPS): text_sensor.text_sensor_schema(),
     }
-)
+).extend(cv.COMPONENT_SCHEMA)
+
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID], config[CONF_PORT])
@@ -34,5 +38,5 @@ async def to_code(config):
         cg.add(var.set_client_count_sensor(sens))
 
     if CONF_CLIENT_IPS in config:
-        sens = await text_sensor.new_text_sensor(config[CONF_CLIENT_COUNT])
+        sens = await text_sensor.new_text_sensor(config[CONF_CLIENT_IPS])
         cg.add(var.set_client_ip_text_sensor(sens))

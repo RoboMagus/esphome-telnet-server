@@ -1,0 +1,40 @@
+substitutions:
+  name: telnet-example
+  friendly_name: Telnet Server
+
+esphome:
+  name: "${name}"
+
+esp32:
+  board: wemos_d1_mini32
+  framework:
+    type: arduino
+  
+wifi:
+  ssid: !secret WiFi_ssid
+  password: !secret WiFi_password
+
+captive_portal:
+
+# Enable Home Assistant API
+api:
+  password: !secret hass_api_password
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  password: !secret ota_password
+  
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    
+logger:
+  level: VERBOSE
+
+telnet_server:
+  port: 25
+  client_count:
+    name: "${friendly_name} client count"
+  client_ips:
+    name: "${friendly_name} client IPs"
