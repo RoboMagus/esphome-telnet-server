@@ -1,20 +1,20 @@
 substitutions:
-  name: telnet-example
   friendly_name: Telnet Server
 
 esphome:
-  name: "${name}"
+  name: telnet-example
 
 esp32:
   board: wemos_d1_mini32
   framework:
     type: arduino
   
+external_components:
+  - source: github://RoboMagus/esphome-telnet-server
+
 wifi:
   ssid: !secret WiFi_ssid
   password: !secret WiFi_password
-
-captive_portal:
 
 # Enable Home Assistant API
 api:
@@ -24,16 +24,12 @@ api:
 
 ota:
   password: !secret ota_password
-  
-time:
-  - platform: homeassistant
-    id: homeassistant_time
     
 logger:
-  level: VERBOSE
+  level: VERBOSE # this will also show lines received on Serial in Log output
 
 telnet_server:
-  port: 25
+  port: 25 # defaut is 23
   client_count:
     name: "${friendly_name} client count"
   client_ips:
