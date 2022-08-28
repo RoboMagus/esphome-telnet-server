@@ -2,7 +2,8 @@
 
 #include "telnet_server.h"
 #include "esphome/core/log.h"
-#include "esphome.h"
+#include "esphome/core/hal.h"
+#include <HardwareSerial.h>
 
 namespace esphome {
 namespace telnet_server {
@@ -18,7 +19,7 @@ TelnetServer::Client::Client(AsyncClient *client)
   this->tcp_client->onTimeout([this](void *h, AsyncClient *client, uint32_t time) { this->disconnected = true; });
 }
 
-float TelnetServer::get_setup_priority() const { return esphome::setup_priority::AFTER_WIFI; }
+float TelnetServer::get_setup_priority() const { return esphome::setup_priority::AFTER_WIFI - 10.0f; }
 
 void TelnetServer::set_client_count_sensor(sensor::Sensor *client_count_sensor) {
   client_count_sensor_ = client_count_sensor;
@@ -40,6 +41,9 @@ void TelnetServer::setup() {
         this->clients_updated_ = true;
       },
       this);
+
+  // Ensure client sensors are updated after startup.
+  clients_updated_ = true;
 }
 
 void TelnetServer::loop() {
