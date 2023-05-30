@@ -15,6 +15,8 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 
+#include <set>
+
 namespace esphome {
 namespace telnet_server {
 
@@ -34,6 +36,8 @@ class TelnetServer : public Component {
 
   void set_client_count_sensor(sensor::Sensor *client_count_sensor);
   void set_client_ip_text_sensor(text_sensor::TextSensor *client_ip_text_sensor);
+
+  void set_disconnect_delay(uint32_t disconnect_delay) { this->client_disconnect_delay = disconnect_delay; }
 
   void setup() override;
   void loop() override;
@@ -59,7 +63,11 @@ class TelnetServer : public Component {
 
   AsyncServer server;
   std::vector<std::unique_ptr<Client>> clients_{};
+  std::map<std::string, uint32_t> client_disconnect_times{};
+  std::set<std::string> last_published_values{};
   bool clients_updated_ = false;
+
+  uint32_t client_disconnect_delay = 5000; // ms
 
   //  Set to store received telegram
   char buffer[MAXLINELENGTH];

@@ -4,6 +4,8 @@
 #include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
+
+#include <list>
 #include <HardwareSerial.h>
 
 namespace esphome {
@@ -109,10 +111,12 @@ void TelnetServer::readSerial() {
 void TelnetServer::writeSerial() {}
 
 void TelnetServer::cleanup() {
+  uint32_t now = millis();
   auto discriminator = [](std::unique_ptr<Client> &client) { return !client->disconnected; };
   auto last_client = std::partition(this->clients_.begin(), this->clients_.end(), discriminator);
   for (auto it = last_client; it != this->clients_.end(); it++) {
-    ESP_LOGD(TAG, "Client %s disconnected", (*it)->identifier.c_str());
+    ESP_LOGD(TAG, "Client %s disconnected @ %6d ms", (*it)->identifier.c_str(), now);
+    client_disconnect_times[(*it)->identifier] = now;
     clients_updated_ = true;
   }
 
@@ -123,21 +127,54 @@ void TelnetServer::updateClientSensors() {
   if (clients_updated_) {
     clients_updated_ = false;
 
-    if (this->client_count_sensor_ != nullptr) {
-      int numClients = clients_.size();
-      this->client_count_sensor_->publish_state(numClients);
-    }
+    bool has_client_count_sensor = (this->client_count_sensor_ != nullptr);
+    bool has_client_list_sensor = (this->client_ip_text_sensor_ != nullptr);
 
-    if (this->client_ip_text_sensor_ != nullptr) {
-      std::string ip_list = "[";
+    if (has_client_count_sensor || has_client_list_sensor) {
+      std::set<std::string> active_clients;
       for (const auto &client : this->clients_) {
-        if (&client != &(this->clients_)[0]) {
-          ip_list += ", ";
-        }
-        ip_list += client->identifier;
+        active_clients.insert(client->identifier);
       }
-      ip_list += "]";
-      this->client_ip_text_sensor_->publish_state(ip_list.c_str());
+
+      uint32_t now = millis();
+      // Iterate using iterator in for loop
+      std::list<std::map<std::string, uint32_t>::const_iterator> itrs;
+      for (std::map<std::string, uint32_t>::const_iterator it = client_disconnect_times.begin(); it != client_disconnect_times.end(); it++) {
+        if (it->second + client_disconnect_delay >= now) {
+          active_clients.insert(it->first);
+        }
+        else {
+          ESP_LOGD(TAG, "Removing Client %s from sensors after disconnect @ %6dms, now %6dms", it->first.c_str(), it->second, now);
+          itrs.push_back(it);
+        }
+      }
+      // Remove old clients
+      for (auto it: itrs) {
+          client_disconnect_times.erase(it);
+      }
+
+      if (last_published_values != active_clients) {
+        // store 'last published' list
+        last_published_values = active_clients;
+
+        if (has_client_count_sensor) {
+          this->client_count_sensor_->publish_state(active_clients.size());
+        }
+
+        if (has_client_list_sensor) {
+          std::string ip_list = "[";
+          bool first = true;
+          for (const auto &client_ip : active_clients) {
+            if (!first) {
+              ip_list += ", ";
+            }
+            ip_list += client_ip;
+            first = false;
+          }
+          ip_list += "]";
+          this->client_ip_text_sensor_->publish_state(ip_list.c_str());
+        }
+      }
     }
   }
 }
