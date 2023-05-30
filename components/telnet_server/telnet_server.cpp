@@ -1,6 +1,7 @@
 #ifdef USE_ARDUINO
 
 #include "telnet_server.h"
+#include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 #include <HardwareSerial.h>
@@ -69,7 +70,9 @@ void TelnetServer::readSerial() {
 
       // Add terminator for Verbose logging:
       buffer[char_idx + len] = '\0';
+#ifdef TELNET_SERVER_VERBOSE_LOGGING
       ESP_LOGV(TAG, " %s", &buffer[lineStartIdx]);
+#endif
 
       // Add the newline for TelNet
       char_idx += len;
@@ -92,7 +95,9 @@ void TelnetServer::readSerial() {
         // Dump buffer contents
         char_idx = MIN(char_idx, MAXLINELENGTH - 1);
         buffer[char_idx] = '\0';
+#ifdef TELNET_SERVER_VERBOSE_LOGGING
         ESP_LOGV(TAG, "\n%s", buffer);
+#endif
         // Clear buffer
         memset(buffer, 0, sizeof(buffer));
         char_idx = 0;
