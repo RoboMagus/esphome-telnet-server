@@ -13,7 +13,7 @@ CONF_VERBOSE = "verbose"
 CONF_DISCONNECT_DELAY = "disconnect_delay"
 
 DEPENDENCIES = ["network"]
-AUTO_LOAD = ["async_tcp"]
+AUTO_LOAD = ["async_tcp", "sensor", "text_sensor"]
 
 telnet_ns = cg.esphome_ns.namespace("telnet_server")
 TelnetServer = telnet_ns.class_("TelnetServer", cg.Component)
