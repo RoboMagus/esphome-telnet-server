@@ -2,6 +2,7 @@
 
 #include "telnet_server.h"
 #include "esphome/core/defines.h"
+#include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 
@@ -11,7 +12,7 @@
 namespace esphome {
 namespace telnet_server {
 
-static const char *const TAG = "TELNET";
+static const char *const TAG = "telnet_server";
 
 TelnetServer::Client::Client(AsyncClient *client)
     : tcp_client{client}, identifier{client->remoteIP().toString().c_str()}, disconnected{false} {
@@ -47,6 +48,13 @@ void TelnetServer::setup() {
 
   // Ensure client sensors are updated after startup.
   clients_updated_ = true;
+}
+
+void TelnetServer::dump_config() {
+  ESP_LOGCONFIG(TAG, "Config:");
+  ESP_LOGCONFIG(TAG, "  Port: %d", this->port_);
+  LOG_SENSOR(TAG, "  Client Count Sensor", this->client_count_sensor_);
+  LOG_TEXT_SENSOR(TAG, "  Client IP Text Sensor: %s", this->client_ip_text_sensor_);
 }
 
 void TelnetServer::loop() {
