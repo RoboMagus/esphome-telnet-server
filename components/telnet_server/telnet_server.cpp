@@ -70,12 +70,6 @@ void TelnetServer::readSerial() {
       uint16_t lineStartIdx = char_idx;
       int len = Serial.readBytesUntil('\n', &buffer[char_idx], (MAXLINELENGTH - char_idx));
 
-      // Add terminator for Verbose logging:
-      buffer[char_idx + len] = '\0';
-#ifdef TELNET_SERVER_VERBOSE_LOGGING
-      ESP_LOGV(TAG, " %s", &buffer[lineStartIdx]);
-#endif
-
       // Add the newline for TelNet
       char_idx += len;
       buffer[char_idx] = '\n';
@@ -83,7 +77,7 @@ void TelnetServer::readSerial() {
       char_idx++;
       len++;
 
-      // push UART data to all connected telnet clients
+      ESP_LOGV(TAG, "Pushing to telnet clients: %s", &buffer[lineStartIdx]);
       for (auto const &client : this->clients_) {
         client->tcp_client->write(&buffer[lineStartIdx], len);
       }
@@ -97,9 +91,6 @@ void TelnetServer::readSerial() {
         // Dump buffer contents
         char_idx = MIN(char_idx, MAXLINELENGTH - 1);
         buffer[char_idx] = '\0';
-#ifdef TELNET_SERVER_VERBOSE_LOGGING
-        ESP_LOGV(TAG, "\n%s", buffer);
-#endif
         // Clear buffer
         memset(buffer, 0, sizeof(buffer));
         char_idx = 0;
