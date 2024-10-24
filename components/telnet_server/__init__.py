@@ -9,7 +9,6 @@ from esphome.const import (
 # ToDo: Max number of clients
 CONF_CLIENT_COUNT = "client_count"
 CONF_CLIENT_IPS = "client_ips"
-CONF_VERBOSE = "verbose"
 CONF_DISCONNECT_DELAY = "disconnect_delay"
 
 DEPENDENCIES = ["network"]
@@ -27,7 +26,6 @@ CONFIG_SCHEMA = cv.Schema(
             accuracy_decimals=0,
         ),
         cv.Optional(CONF_CLIENT_IPS): text_sensor.text_sensor_schema(),
-        cv.Optional(CONF_VERBOSE, default=False): cv.boolean,
         cv.Optional(
             CONF_DISCONNECT_DELAY, default="2500ms"
         ): cv.positive_time_period_milliseconds,
@@ -48,6 +46,3 @@ async def to_code(config):
         cg.add(var.set_client_ip_text_sensor(sens))
 
     cg.add(var.set_disconnect_delay(config[CONF_DISCONNECT_DELAY].total_milliseconds))
-
-    if config.get(CONF_VERBOSE):
-        cg.add_define("TELNET_SERVER_VERBOSE_LOGGING")
