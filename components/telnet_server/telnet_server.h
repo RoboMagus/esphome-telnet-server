@@ -24,12 +24,11 @@ namespace telnet_server {
 
 #define MAXLINELENGTH 1280
 #define DEFAULT_MAX_CLIENTS 3
-#define TELNET_PORT 23
 
 class TelnetServer : public Component {
  public:
-  TelnetServer(const uint16_t port = TELNET_PORT) : server(port) {
-    // nothing to do here
+  TelnetServer(const uint16_t port) : server(port) {
+    this->port_ = port;
   }
 
   float get_setup_priority() const override;
@@ -40,6 +39,7 @@ class TelnetServer : public Component {
   void set_disconnect_delay(uint32_t disconnect_delay) { this->client_disconnect_delay = disconnect_delay; }
 
   void setup() override;
+  void dump_config() override;
   void loop() override;
 
   void on_shutdown() override;
@@ -66,6 +66,7 @@ class TelnetServer : public Component {
   std::map<std::string, uint32_t> client_disconnect_times{};
   std::set<std::string> last_published_values{};
   bool clients_updated_ = false;
+  uint16_t port_;
 
   uint32_t client_disconnect_delay = 5000; // ms
 
