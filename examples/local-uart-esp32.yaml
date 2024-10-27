@@ -5,30 +5,25 @@ esphome:
   name: telnet-example
 
 esp32:
-  board: wemos_d1_mini32
-  framework:
-    type: arduino
+  board: wemos_d1_mini32y
   
 external_components:
   - source: github://RoboMagus/esphome-telnet-server
-
-wifi:
-  ssid: !secret WiFi_ssid
-  password: !secret WiFi_password
-
-# Enable Home Assistant API
-api:
-  password: !secret hass_api_password
-  encryption:
-    key: !secret api_encryption_key
-
-ota:
-  password: !secret ota_password
-    
+   
 logger:
   level: VERBOSE # this will also show lines received on Serial in Log output
 
+# See 
+# https://esphome.io/components/logger.html#default-uart-gpio-pins
+# for a breakdown of which microcontrollers use which pins
+uart:
+  id: uart_0
+  baud_rate: 115200
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+
 telnet_server:
+  uart_id: uart_0
   port: 25 # defaut is 23
   client_count:
     name: "${friendly_name} client count"

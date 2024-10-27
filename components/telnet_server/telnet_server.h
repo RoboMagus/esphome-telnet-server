@@ -1,19 +1,17 @@
 #pragma once
 
-// Only works on Arduino framework!
-#ifdef USE_ARDUINO
-
 #ifdef ARDUINO_ARCH_ESP8266
 #include <ESPAsyncTCP.h>
 #else
 // AsyncTCP.h includes parts of freertos, which require FreeRTOS.h header to be included first
-#include <freertos/FreeRTOS.h>
+//#include <freertos/FreeRTOS.h>
 #include <AsyncTCP.h>
 #endif
 
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/components/uart/uart.h"
 
 #include <set>
 
@@ -41,27 +39,32 @@ class TelnetServer : public Component {
   void setup() override;
   void dump_config() override;
   void loop() override;
-
+  void set_uart(uart::UARTComponent *uart);
+  int readBytesUntil(uart::UARTComponent *uart, char terminator, char *buffer, int max_length);
+  
   void on_shutdown() override;
 
  protected:
   void cleanup();
 
   void readSerial();
-  void writeSerial();
+  void handleTelnetData(AsyncClient *client, void* data, size_t len);
 
   void updateClientSensors();
 
   struct Client {
-    Client(AsyncClient *client);
+    Client(AsyncClient *client, uart::UARTComponent *uart);
     ~Client() { delete this->tcp_client; }
 
+  uart::UARTComponent *uart_;
     AsyncClient *tcp_client{nullptr};
     std::string identifier{};
     bool disconnected{false};
+    void handleTelnetData(AsyncClient *client, void* data, size_t len);
   };
 
   AsyncServer server;
+  uint16_t port_;
   std::vector<std::unique_ptr<Client>> clients_{};
   std::map<std::string, uint32_t> client_disconnect_times{};
   std::set<std::string> last_published_values{};
@@ -76,9 +79,9 @@ class TelnetServer : public Component {
 
   sensor::Sensor *client_count_sensor_{nullptr};
   text_sensor::TextSensor *client_ip_text_sensor_{nullptr};
+  uart::UARTComponent *uart_{nullptr};
 };
 
 }  // namespace telnet_server
 }  // namespace esphome
 
-#endif  // USE_ARDUINO
