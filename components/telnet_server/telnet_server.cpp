@@ -11,32 +11,12 @@ namespace telnet_server {
 
 static const char *const TAG = "telnet_server";
 
-TelnetServer::Client::Client(AsyncClient *client, uart::UARTComponent *uart)
+TelnetServer::Client::Client(AsyncClient *client)
     : tcp_client{client}, identifier{client->remoteIP().toString().c_str()}, disconnected{false} {
   ESP_LOGD(TAG, "New client connected from %s", this->identifier.c_str());
-  this->uart_ = uart;
   this->tcp_client->onError([this](void *h, AsyncClient *client, int8_t error) { this->disconnected = true; });
   this->tcp_client->onDisconnect([this](void *h, AsyncClient *client) { this->disconnected = true; });
   this->tcp_client->onTimeout([this](void *h, AsyncClient *client, uint32_t time) { this->disconnected = true; });
-  this->tcp_client->onData([this](void* arg, AsyncClient* client, void* data, size_t len) { this->handleTelnetData(client, data, len); });
-    }
-  
-void TelnetServer::Client::handleTelnetData(AsyncClient *client, void* data, size_t len) {
-  ESP_LOGV(TAG, "Received %d bytes from %s", len, this->identifier.c_str());
-  if (len > 0) {
-    char* buffer = (char*) data;
-    this->uart_->write_array(reinterpret_cast<const uint8_t*>(buffer), len);
-    this->uart_->flush();
-    ESP_LOGV(TAG, "Sent to UART: %s", buffer);
-  }
-}
-
-void TelnetServer::dump_config() {
-  ESP_LOGCONFIG(TAG, "Config:");
-  ESP_LOGCONFIG(TAG, "  Port: %d", this->port_);
-  ESP_LOGCONFIG(TAG, "  Client Count Sensor: %s", this->client_count_sensor_ ? this->client_count_sensor_->get_name().c_str() : "none");
-  ESP_LOGCONFIG(TAG, "  Client IP Text Sensor: %s", this->client_ip_text_sensor_ ? this->client_ip_text_sensor_->get_name().c_str() : "none");
-  ESP_LOGCONFIG(TAG, "  UART baud rate: %d",this->uart_->get_baud_rate());
 }
 
 float TelnetServer::get_setup_priority() const { return esphome::setup_priority::AFTER_WIFI - 10.0f; }
@@ -49,6 +29,10 @@ void TelnetServer::set_client_ip_text_sensor(text_sensor::TextSensor *client_ip_
   client_ip_text_sensor_ = client_ip_text_sensor;
 }
 
+void TelnetServer::set_uart(uart::UARTComponent *uart) {
+  this->uart_ = uart;
+}
+
 void TelnetServer::setup() {
   // server.setTimeout(10);
   server.begin();
@@ -57,7 +41,7 @@ void TelnetServer::setup() {
         if (tcpClient == nullptr) {
           return;
         }
-        this->clients_.push_back(std::unique_ptr<Client>(new Client(tcpClient, this->uart_)));
+        this->clients_.push_back(std::unique_ptr<Client>(new Client(tcpClient)));
         this->clients_updated_ = true;
       },
       this);
@@ -79,10 +63,6 @@ void TelnetServer::loop() {
   updateClientSensors();
 }
 
-void TelnetServer::set_uart(uart::UARTComponent *uart) {
-  this->uart_ = uart;
-}
-
 void TelnetServer::on_shutdown() {
   for (auto &client : this->clients_) {
     client->tcp_client->close(true);
@@ -96,6 +76,12 @@ void TelnetServer::readSerial() {
 
       uint16_t lineStartIdx = char_idx;
       int len = readBytesUntil(this->uart_, '\n', &buffer[char_idx], (MAXLINELENGTH - char_idx));
+
+      // Add terminator for Verbose logging:
+      buffer[char_idx + len] = '\0';
+#ifdef TELNET_SERVER_VERBOSE_LOGGING
+      ESP_LOGV(TAG, " %s", &buffer[lineStartIdx]);
+#endif
 
       // Add the newline for TelNet
       char_idx += len;

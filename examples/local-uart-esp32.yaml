@@ -5,7 +5,7 @@ esphome:
   name: telnet-example
 
 esp32:
-  board: wemos_d1_mini32y
+  board: wemos_d1_mini32
   
 external_components:
   - source: github://RoboMagus/esphome-telnet-server
@@ -24,7 +24,7 @@ uart:
 
 telnet_server:
   uart_id: uart_0
-  port: 25 # defaut is 23
+  port: 25 # default is 23
   client_count:
     name: "${friendly_name} client count"
   client_ips:

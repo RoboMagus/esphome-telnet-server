@@ -5,7 +5,7 @@ esphome:
   name: telnet-example
 
 esp32:
-  board: wemos_d1_mini32y
+  board: wemos_d1_mini32
   
 external_components:
   - source: github://RoboMagus/esphome-telnet-server
@@ -21,5 +21,4 @@ uart:
   tx_pin: GPIO17
   rx_pin: GPIO16
 telnet_server:
-  port: 23
   uart_id: uart_2

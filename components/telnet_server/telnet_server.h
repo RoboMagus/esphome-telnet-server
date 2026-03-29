@@ -31,6 +31,7 @@ class TelnetServer : public Component {
 
   float get_setup_priority() const override;
 
+  void set_uart(uart::UARTComponent *uart);
   void set_client_count_sensor(sensor::Sensor *client_count_sensor);
   void set_client_ip_text_sensor(text_sensor::TextSensor *client_ip_text_sensor);
 
@@ -39,7 +40,6 @@ class TelnetServer : public Component {
   void setup() override;
   void dump_config() override;
   void loop() override;
-  void set_uart(uart::UARTComponent *uart);
   int readBytesUntil(uart::UARTComponent *uart, char terminator, char *buffer, int max_length);
   
   void on_shutdown() override;
@@ -48,23 +48,18 @@ class TelnetServer : public Component {
   void cleanup();
 
   void readSerial();
-  void handleTelnetData(AsyncClient *client, void* data, size_t len);
 
   void updateClientSensors();
 
   struct Client {
-    Client(AsyncClient *client, uart::UARTComponent *uart);
+    Client(AsyncClient *client);
     ~Client() { delete this->tcp_client; }
-
-  uart::UARTComponent *uart_;
     AsyncClient *tcp_client{nullptr};
     std::string identifier{};
     bool disconnected{false};
-    void handleTelnetData(AsyncClient *client, void* data, size_t len);
   };
 
   AsyncServer server;
-  uint16_t port_;
   std::vector<std::unique_ptr<Client>> clients_{};
   std::map<std::string, uint32_t> client_disconnect_times{};
   std::set<std::string> last_published_values{};
