@@ -11,8 +11,16 @@ namespace telnet_server {
 
 static const char *const TAG = "telnet_server";
 
+std::string toIP(uint32_t addr) {
+  char buf[network::IP_ADDRESS_BUFFER_SIZE];
+  ip_addr_t _addr = static_cast<ip_addr_t>(addr);
+  network::IPAddress ip = &_addr;
+  ip.str_to(buf);
+  return buf;
+}
+
 TelnetServer::Client::Client(AsyncClient *client)
-    : tcp_client{client}, identifier{client->remoteIP().toString().c_str()}, disconnected{false} {
+    : tcp_client{client}, identifier{toIP(client->getRemoteAddress())}, disconnected{false} {
   ESP_LOGD(TAG, "New client connected from %s", this->identifier.c_str());
   this->tcp_client->onError([this](void *h, AsyncClient *client, int8_t error) { this->disconnected = true; });
   this->tcp_client->onDisconnect([this](void *h, AsyncClient *client) { this->disconnected = true; });

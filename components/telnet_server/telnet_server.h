@@ -1,19 +1,14 @@
 #pragma once
 
-#ifdef ARDUINO_ARCH_ESP8266
-#include <ESPAsyncTCP.h>
-#else
-// AsyncTCP.h includes parts of freertos, which require FreeRTOS.h header to be included first
-//#include <freertos/FreeRTOS.h>
-#include <AsyncTCP.h>
-#endif
-
 #include "esphome/core/component.h"
+#include "esphome/components/async_tcp/async_tcp.h"
+#include "esphome/components/network/ip_address.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
 #include "esphome/components/uart/uart.h"
 
 #include <set>
+#include <map>
 
 namespace esphome {
 namespace telnet_server {
