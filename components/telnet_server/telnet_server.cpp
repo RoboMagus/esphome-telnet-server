@@ -79,67 +79,23 @@ void TelnetServer::on_shutdown() {
 
 void TelnetServer::readSerial() {
   if (this->uart_->available()) {
-    while (this->uart_->available()) {
-      delay(5);  // Ensure full lines are available..
+    int len = std::min(sizeof(buffer), this->uart_->available());
+    this->uart_->read_array((uint8_t*)buffer, len);
 
-      uint16_t lineStartIdx = char_idx;
-      int len = readBytesUntil(this->uart_, '\n', &buffer[char_idx], (MAXLINELENGTH - char_idx));
-
-      // Add terminator for Verbose logging:
-      buffer[char_idx + len] = '\0';
 #ifdef TELNET_SERVER_VERBOSE_LOGGING
-      ESP_LOGV(TAG, " %s", &buffer[lineStartIdx]);
+    // Add terminator for Verbose logging:
+    buffer[len] = '\0';
+    ESP_LOGV(TAG, "> '%s'", buffer);
 #endif
 
-      // Add the newline for TelNet
-      char_idx += len;
-      buffer[char_idx] = '\n';
-      buffer[char_idx + 1] = '\0';
-      char_idx++;
-      len++;
-
-      // push UART data to all connected telnet clients
-      for (auto const &client : this->clients_) {
-        client->tcp_client->write(&buffer[lineStartIdx], len);
-      }
-
-      // Switch buffers once the telegram is complete
-      if (buffer[lineStartIdx] == '!' && len >= 6) {  // including newline!
-        memset(buffer, 0, sizeof(buffer));
-        char_idx = 0;
-      } else if (char_idx > MAXLINELENGTH - 1) {
-        ESP_LOGW(TAG, "Telegram buffer overrun!");
-        // Dump buffer contents
-        char_idx = MIN(char_idx, MAXLINELENGTH - 1);
-        buffer[char_idx] = '\0';
-#ifdef TELNET_SERVER_VERBOSE_LOGGING
-        ESP_LOGV(TAG, "\n%s", buffer);
-#endif
-        // Clear buffer
-        memset(buffer, 0, sizeof(buffer));
-        char_idx = 0;
-      }
+    // push UART data to all connected telnet clients
+    for (auto const &client : this->clients_) {
+      client->tcp_client->write(buffer, len);
     }
+
+    // Clear buffer
+    memset(buffer, 0, sizeof(buffer));
   }
-}
-
-
-int TelnetServer::readBytesUntil(uart::UARTComponent *uart, char terminator, char *buffer, int max_length) {
-  int count = 0;
-  while (count < max_length) {
-    if (!uart->available()) {
-      break;
-    }
-    uint8_t c;
-    if (!uart->read_byte(&c)) {
-      break;
-    }
-    if (c == terminator) {
-      break;
-    }
-    buffer[count++] = c;
-  }
-  return count;
 }
 
 void TelnetServer::cleanup() {

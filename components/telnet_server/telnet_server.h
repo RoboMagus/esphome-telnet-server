@@ -35,8 +35,6 @@ class TelnetServer : public Component {
   void setup() override;
   void dump_config() override;
   void loop() override;
-  int readBytesUntil(uart::UARTComponent *uart, char terminator, char *buffer, int max_length);
-  
   void on_shutdown() override;
 
  protected:
