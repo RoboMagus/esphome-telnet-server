@@ -15,7 +15,9 @@ namespace telnet_server {
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define MAXLINELENGTH 1280
+#ifndef TELNET_SERVER_BUFFER_SIZE
+#define TELNET_SERVER_BUFFER_SIZE 1280
+#endif
 #define DEFAULT_MAX_CLIENTS 3
 
 class TelnetServer : public Component {
@@ -62,7 +64,7 @@ class TelnetServer : public Component {
   uint32_t client_disconnect_delay = 5000; // ms
 
   //  Set to store received telegram
-  char buffer[MAXLINELENGTH];
+  char buffer[TELNET_SERVER_BUFFER_SIZE];
   uint16_t char_idx = 0;
 
   sensor::Sensor *client_count_sensor_{nullptr};

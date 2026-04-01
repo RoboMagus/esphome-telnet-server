@@ -7,6 +7,7 @@ from esphome.const import (
     CONF_PORT,
 )
 
+CONF_BUFFER_SIZE = "buffer_size"
 # ToDo: Max number of clients
 CONF_CLIENT_COUNT = "client_count"
 CONF_CLIENT_IPS = "client_ips"
@@ -27,6 +28,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.declare_id(TelnetServer),
         cv.Required(CONF_UARTID): cv.use_id(uart.UARTComponent),
         cv.Optional(CONF_PORT, default=23): cv.port,
+        cv.Optional(CONF_BUFFER_SIZE, default=256): cv.uint16_t,
         cv.Optional(CONF_CLIENT_COUNT): sensor.sensor_schema(
             unit_of_measurement=" ",
             accuracy_decimals=0,
@@ -57,5 +59,7 @@ async def to_code(config):
     uart_var = await cg.get_variable(config[CONF_UARTID])
     cg.add(var.set_uart(uart_var))
 
+    if config.get(CONF_BUFFER_SIZE):
+        cg.add_define("TELNET_SERVER_BUFFER_SIZE", config.get(CONF_BUFFER_SIZE))
     if config.get(CONF_VERBOSE):
         cg.add_define("TELNET_SERVER_VERBOSE_LOGGING")
