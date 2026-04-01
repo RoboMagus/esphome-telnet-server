@@ -1,5 +1,3 @@
-#ifdef USE_ARDUINO
-
 #include "telnet_server.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/helpers.h"
@@ -7,7 +5,6 @@
 #include "esphome/core/hal.h"
 
 #include <list>
-#include <HardwareSerial.h>
 
 namespace esphome {
 namespace telnet_server {
@@ -17,7 +14,6 @@ static const char *const TAG = "telnet_server";
 TelnetServer::Client::Client(AsyncClient *client)
     : tcp_client{client}, identifier{client->remoteIP().toString().c_str()}, disconnected{false} {
   ESP_LOGD(TAG, "New client connected from %s", this->identifier.c_str());
-
   this->tcp_client->onError([this](void *h, AsyncClient *client, int8_t error) { this->disconnected = true; });
   this->tcp_client->onDisconnect([this](void *h, AsyncClient *client) { this->disconnected = true; });
   this->tcp_client->onTimeout([this](void *h, AsyncClient *client, uint32_t time) { this->disconnected = true; });
@@ -31,6 +27,10 @@ void TelnetServer::set_client_count_sensor(sensor::Sensor *client_count_sensor) 
 
 void TelnetServer::set_client_ip_text_sensor(text_sensor::TextSensor *client_ip_text_sensor) {
   client_ip_text_sensor_ = client_ip_text_sensor;
+}
+
+void TelnetServer::set_uart(uart::UARTComponent *uart) {
+  this->uart_ = uart;
 }
 
 void TelnetServer::setup() {
@@ -60,7 +60,6 @@ void TelnetServer::dump_config() {
 void TelnetServer::loop() {
   cleanup();
   readSerial();
-  writeSerial();
   updateClientSensors();
 }
 
@@ -71,12 +70,12 @@ void TelnetServer::on_shutdown() {
 }
 
 void TelnetServer::readSerial() {
-  if (Serial.available()) {
-    while (Serial.available()) {
+  if (this->uart_->available()) {
+    while (this->uart_->available()) {
       delay(5);  // Ensure full lines are available..
 
       uint16_t lineStartIdx = char_idx;
-      int len = Serial.readBytesUntil('\n', &buffer[char_idx], (MAXLINELENGTH - char_idx));
+      int len = readBytesUntil(this->uart_, '\n', &buffer[char_idx], (MAXLINELENGTH - char_idx));
 
       // Add terminator for Verbose logging:
       buffer[char_idx + len] = '\0';
@@ -116,7 +115,24 @@ void TelnetServer::readSerial() {
   }
 }
 
-void TelnetServer::writeSerial() {}
+
+int TelnetServer::readBytesUntil(uart::UARTComponent *uart, char terminator, char *buffer, int max_length) {
+  int count = 0;
+  while (count < max_length) {
+    if (!uart->available()) {
+      break;
+    }
+    uint8_t c;
+    if (!uart->read_byte(&c)) {
+      break;
+    }
+    if (c == terminator) {
+      break;
+    }
+    buffer[count++] = c;
+  }
+  return count;
+}
 
 void TelnetServer::cleanup() {
   uint32_t now = millis();
@@ -189,5 +205,3 @@ void TelnetServer::updateClientSensors() {
 
 }  // namespace telnet_server
 }  // namespace esphome
-
-#endif  // USE_ARDUINO

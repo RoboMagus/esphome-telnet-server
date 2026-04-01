@@ -1,19 +1,17 @@
 #pragma once
 
-// Only works on Arduino framework!
-#ifdef USE_ARDUINO
-
 #ifdef ARDUINO_ARCH_ESP8266
 #include <ESPAsyncTCP.h>
 #else
 // AsyncTCP.h includes parts of freertos, which require FreeRTOS.h header to be included first
-#include <freertos/FreeRTOS.h>
+//#include <freertos/FreeRTOS.h>
 #include <AsyncTCP.h>
 #endif
 
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/components/uart/uart.h"
 
 #include <set>
 
@@ -33,6 +31,7 @@ class TelnetServer : public Component {
 
   float get_setup_priority() const override;
 
+  void set_uart(uart::UARTComponent *uart);
   void set_client_count_sensor(sensor::Sensor *client_count_sensor);
   void set_client_ip_text_sensor(text_sensor::TextSensor *client_ip_text_sensor);
 
@@ -41,21 +40,20 @@ class TelnetServer : public Component {
   void setup() override;
   void dump_config() override;
   void loop() override;
-
+  int readBytesUntil(uart::UARTComponent *uart, char terminator, char *buffer, int max_length);
+  
   void on_shutdown() override;
 
  protected:
   void cleanup();
 
   void readSerial();
-  void writeSerial();
 
   void updateClientSensors();
 
   struct Client {
     Client(AsyncClient *client);
     ~Client() { delete this->tcp_client; }
-
     AsyncClient *tcp_client{nullptr};
     std::string identifier{};
     bool disconnected{false};
@@ -76,9 +74,9 @@ class TelnetServer : public Component {
 
   sensor::Sensor *client_count_sensor_{nullptr};
   text_sensor::TextSensor *client_ip_text_sensor_{nullptr};
+  uart::UARTComponent *uart_{nullptr};
 };
 
 }  // namespace telnet_server
 }  // namespace esphome
 
-#endif  // USE_ARDUINO
